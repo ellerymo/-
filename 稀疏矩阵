@@ -1,0 +1,148 @@
+#include<iostream>
+#include<vector>
+using namespace std;
+//三元组
+template<class T>
+struct Triple
+{
+	T _value;
+	int _row;
+	int _col;
+	Triple(const T& data = T(), int m = 0, int n = 0):_value(data),_row(m), _col(n)
+	{}
+};
+template<class T>
+class SpaMatrix
+{
+public:
+	SpaMatrix(T* arr = NULL, int m = 0, int n = 0, int inva = 0)
+		:_Row(m), _Col(n), _invalid(inva), _n(0)
+	{
+		int index = 0;
+		for (int i = 0; i < m; i++)
+		{
+			for (int j = 0; j < n; j++)
+			{
+				if (arr[i*n + j] != _invalid)
+				{
+					_a.push_back(Triple<T>(arr[i*n + j], i, j));
+					_n ++;
+				}
+			}
+		}
+	}
+	void Display()
+	{
+		int index = 0;
+		for (int i = 0; i < _Row; i++)
+		{
+			for (int j = 0; j < _Col; j++)
+			{
+				if (((size_t)index < _a.size()) && (_a[index]._row == i) && (_a[index]._col == j))
+					cout << _a[index++]._value<<" ";
+				else
+					cout << _invalid<<" ";
+			}
+			cout << endl;
+		}
+	}
+	//普通转置
+	SpaMatrix<T> OrdinaryTrans()
+	{
+		int count = 0;
+		int index = 0;
+		SpaMatrix<T> sp;
+			for (int j = 0; j < _Col; j++)
+			{ 
+				for (int index = 0; index < _n; index++)
+				{
+					if (_a[index]._col == j)
+					{
+						sp._a.push_back(_a[index]);
+						sp._n ++;
+						sp._a[index]._row = _a[index]._col;
+						sp._a[index]._col = _a[index]._row;
+					}
+				}
+			}
+			sp._Row = _Col;
+			sp._Col = _Row;
+		return sp;
+	}
+	//快速转置
+	SpaMatrix<T> FastTrans()
+	{
+		//统计有效数据的开始位置
+		int *RowStart = new int[_Col];
+		//统计转置之后的矩阵里每行的有效数据的个数
+		int *RowCount = new int[_Col];
+		memset(RowCount, 0, sizeof(int)*_Col);
+		memset(RowStart, 0, sizeof(int)*_Col);
+		size_t index = 0;
+
+		//Set RowCount
+		while (index < _a.size())
+		{
+			RowCount[_a[index]._col]++;
+			index++;
+		}
+				
+		//Set RowStart
+		RowStart[0] = 0;
+		for (int i = 1; i < _Col; i++)
+		{
+			RowStart[i] = RowStart[i - 1] + RowCount[i - 1];
+		}
+
+		//构造转置之后的矩阵
+		SpaMatrix<T> sptrans;
+		sptrans._Row = _Col;
+		sptrans._Col = _Row;
+		sptrans._n = _n;
+		index = 0;
+
+		//此处使用下标访问必须开辟空间，但如果使用push_back()可以不用开辟~
+		sptrans._a.resize(_a.size());
+	    while(index < _a.size())
+  		{
+  			int Rowindex = _a[index]._col;
+  			int& RowSt = RowStart[Rowindex];
+  
+  			sptrans._a[RowSt]._value = _a[index]._value;
+  			sptrans._a[RowSt]._col = _a[index]._row;
+  			sptrans._a[RowSt]._row = _a[index]._col;
+  
+  			index++;
+  			RowSt++;
+  		}
+	  	return sptrans;
+  }
+private:
+	vector< Triple<T> > _a;
+	int _invalid;
+	int _n;
+	int _Row;
+	int _Col;
+};
+void test()
+{
+	int arr[][4] = { { 1, 2, 0, 0 },
+	{ 0, 0, 0, 0 },
+	{ 0, 0, 3, 2 },
+	{ 0, 0, 0, 4 } };
+	SpaMatrix<int> spa((int *)arr,4,4,0);
+	cout << "Source" << endl;
+	spa.Display();
+	SpaMatrix<int> spa2 = spa.OrdinaryTrans();
+	cout << endl <<"OrdinaryTransport"<<endl;
+	spa2.Display();
+	SpaMatrix<int> spa3 = spa.FastTrans();
+	cout << endl << "FastTransport" << endl;
+	spa3.Display();
+}
+int main()
+{
+	test();
+	getchar();
+	return 0;
+}
